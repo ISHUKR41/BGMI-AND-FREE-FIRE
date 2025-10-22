@@ -1,0 +1,39 @@
+{
+  "name": "bgmi-freefire-tournament",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed:admin": "node scripts/seed-admin.js",
+    "seed:tournaments": "node scripts/seed-tournaments.js",
+    "seed:all": "npm run seed:tournaments && npm run seed:admin"
+  },
+  "dependencies": {
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "mongoose": "^8.1.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cloudinary": "^2.0.1",
+    "react-hook-form": "^7.50.0",
+    "zod": "^3.22.4",
+    "@hookform/resolvers": "^3.3.4",
+    "date-fns": "^3.3.1",
+    "framer-motion": "^11.0.3",
+    "lucide-react": "^0.321.0",
+    "react-hot-toast": "^2.4.1",
+    "axios": "^1.6.7"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0"
+  }
+}
+
