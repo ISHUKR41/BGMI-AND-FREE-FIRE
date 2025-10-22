@@ -4,13 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { 
-  Shield, LogOut, Gamepad2, RefreshCw, Check, X, Trash2, 
+import {
+  Shield, LogOut, Gamepad2, RefreshCw, Check, X, Trash2,
   Clock, CheckCircle, XCircle, Filter, Image as ImageIcon,
-  QrCode, Upload, Loader
+  QrCode, Upload, Loader, Users, Trophy, Target, Star,
+  Eye, EyeOff, Search, Download, AlertTriangle, UserCheck
 } from 'lucide-react'
 import Image from 'next/image'
-import { format } from 'date-fns'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import { ConfirmModal, ImageModal } from '@/components/Modal'
+import QRCodeGenerator from '@/components/QRCodeGenerator'
+import { StatCard } from '@/components/AnimatedCounter'
+import AdvancedLoader from '@/components/AdvancedLoader'
+import ParticleBackground from '@/components/ParticleBackground'
 
 export default function AdminDashboard() {
   const [activeGame, setActiveGame] = useState('bgmi')
@@ -22,7 +29,19 @@ export default function AdminDashboard() {
   const [processing, setProcessing] = useState({})
   const [uploadingQR, setUploadingQR] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
-  
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
+  const [confirmMessage, setConfirmMessage] = useState('')
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [imageModalSrc, setImageModalSrc] = useState('')
+  const [stats, setStats] = useState({
+    totalRegistrations: 0,
+    approvedCount: 0,
+    pendingCount: 0,
+    rejectedCount: 0,
+  })
+
   const router = useRouter()
   
   useEffect(() => {
@@ -39,7 +58,7 @@ export default function AdminDashboard() {
     const interval = setInterval(fetchData, 30000)
     
     return () => clearInterval(interval)
-  }, [activeGame, activeTournament, statusFilter])
+  }, [activeGame, activeTournament, statusFilter, router])
   
   const fetchData = async () => {
     try {
@@ -55,12 +74,23 @@ export default function AdminDashboard() {
       const regResponse = await axios.get(url, { headers })
       setRegistrations(regResponse.data.registrations || [])
       
-      // Fetch tournaments
-      const tourResponse = await axios.get(`/api/tournaments?gameType=${activeGame}`, { headers })
-      const tourMap = {}
-      tourResponse.data.tournaments.forEach(t => {
-        tourMap[t.tournamentType] = t
+      // Calculate stats
+      const allRegs = regResponse.data.registrations || []
+      setStats({
+        totalRegistrations: allRegs.length,
+        approvedCount: allRegs.filter(r => r.status === 'approved').length,
+        pendingCount: allRegs.filter(r => r.status === 'pending').length,
+        rejectedCount: allRegs.filter(r => r.status === 'rejected').length,
       })
+      
+      // Fetch tournaments
+      const tourResponse = await axios.get(`/api/tournaments?gameType=${activeGame}`)
+      const tourMap = {}
+      if (tourResponse.data.tournaments) {
+        tourResponse.data.tournaments.forEach(t => {
+          tourMap[t.tournamentType] = t
+        })
+      }
       setTournaments(tourMap)
       
       setLoading(false)
@@ -70,6 +100,8 @@ export default function AdminDashboard() {
         toast.error('Session expired. Please login again.')
         localStorage.removeItem('adminToken')
         router.push('/admin/login')
+      } else {
+        setLoading(false)
       }
     }
   }
@@ -86,6 +118,73 @@ export default function AdminDashboard() {
       router.push('/admin/login')
     }
   }
+
+  // Enhanced confirmation handlers
+  const handleConfirmAction = (action, id, actionType) => {
+    let message = ''
+    switch (actionType) {
+      case 'approve':
+        message = 'Are you sure you want to approve this registration?'
+        break
+      case 'reject':
+        message = 'Are you sure you want to reject this registration?'
+        break
+      case 'delete':
+        message = 'Are you sure you want to delete this registration? This action cannot be undone.'
+        break
+      case 'reset':
+        message = `Are you sure you want to reset ${activeGame.toUpperCase()} ${activeTournament} tournament? This will delete all registrations!`
+        break
+      default:
+        message = 'Are you sure you want to perform this action?'
+    }
+
+    setConfirmMessage(message)
+    setConfirmAction({ action, id, actionType })
+    setShowConfirmModal(true)
+  }
+
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return
+
+    const { action, id, actionType } = confirmAction
+
+    try {
+      if (actionType === 'reset') {
+        await handleResetTournament()
+      } else if (actionType === 'approve') {
+        await handleApprove(id)
+      } else if (actionType === 'reject') {
+        await handleReject(id)
+      } else if (actionType === 'delete') {
+        await handleDelete(id)
+      }
+    } catch (error) {
+      console.error('Action failed:', error)
+    } finally {
+      setShowConfirmModal(false)
+      setConfirmAction(null)
+    }
+  }
+
+  const handleImageClick = (src) => {
+    setImageModalSrc(src)
+    setShowImageModal(true)
+  }
+
+  // Filter registrations based on search term
+  const filteredRegistrations = registrations.filter(reg => {
+    if (!searchTerm) return true
+
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      reg.teamName?.toLowerCase().includes(searchLower) ||
+      reg.teamLeader?.name?.toLowerCase().includes(searchLower) ||
+      reg.teamLeader?.gameId?.toLowerCase().includes(searchLower) ||
+      reg.teamLeader?.whatsapp?.includes(searchTerm) ||
+      reg.payment?.transactionId?.toLowerCase().includes(searchLower)
+    )
+  })
   
   const handleApprove = async (id) => {
     setProcessing({ ...processing, [id]: 'approving' })
@@ -136,8 +235,6 @@ export default function AdminDashboard() {
   }
   
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this registration?')) return
-    
     setProcessing({ ...processing, [id]: 'deleting' })
     
     try {
@@ -157,8 +254,6 @@ export default function AdminDashboard() {
   }
   
   const handleResetTournament = async () => {
-    if (!confirm(`Are you sure you want to reset ${activeGame.toUpperCase()} ${activeTournament} tournament? This will delete all registrations!`)) return
-    
     try {
       const token = localStorage.getItem('adminToken')
       const response = await axios.post(
@@ -215,67 +310,156 @@ export default function AdminDashboard() {
   }
   
   const currentTournament = tournaments[activeTournament] || {}
-  
+
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="glass-effect rounded-xl p-6 border border-white/10 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-8 h-8 text-purple-400" />
-            <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-gray-400">Tournament Management</p>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      {/* Advanced Background */}
+      <ParticleBackground />
+      
+      {/* Enhanced Animated background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-purple-500/15 to-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-orange-500/15 to-yellow-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto relative">
+        {/* Header */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="glass-effect rounded-2xl p-8 border border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl"></div>
+
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Shield className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    Admin Dashboard
+                  </h1>
+                  <p className="text-gray-400 text-lg">Professional Tournament Management</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <motion.button
+                  onClick={fetchData}
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-105"
+                  title="Refresh Data"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <RefreshCw className="w-5 h-5 text-purple-400" />
+                </motion.button>
+
+                <motion.button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-red-500/20 to-pink-500/20 hover:from-red-500/30 hover:to-pink-500/30 text-red-400 rounded-xl transition-all duration-300 font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </motion.button>
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={fetchData}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
-            
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="max-w-7xl mx-auto">
+        </motion.div>
+
+        {/* Stats Overview */}
+        <motion.div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <StatCard
+            title="Total Registrations"
+            value={stats.totalRegistrations}
+            icon={Users}
+            className="glass-effect border border-white/10"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approvedCount}
+            icon={CheckCircle}
+            className="glass-effect border border-green-500/20"
+          />
+          <StatCard
+            title="Pending"
+            value={stats.pendingCount}
+            icon={Clock}
+            className="glass-effect border border-yellow-500/20"
+          />
+          <StatCard
+            title="Rejected"
+            value={stats.rejectedCount}
+            icon={XCircle}
+            className="glass-effect border border-red-500/20"
+          />
+        </motion.div>
+
         {/* Game Selector */}
-        <div className="flex gap-4 mb-6">
-          <button
+        <motion.div
+          className="flex gap-6 mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <motion.button
             onClick={() => setActiveGame('bgmi')}
-            className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${
+            className={cn(
+              "flex-1 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 relative overflow-hidden",
               activeGame === 'bgmi'
-                ? 'bg-gradient-bgmi text-white shadow-lg'
-                : 'glass-effect text-gray-300 hover:text-white'
-            }`}
+                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25'
+                : 'glass-effect text-gray-300 hover:text-white border border-white/10 hover:border-orange-500/30 hover:bg-orange-500/5'
+            )}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Gamepad2 className="w-5 h-5 inline mr-2" />
-            BGMI
-          </button>
-          
-          <button
+            <div className="flex items-center justify-center space-x-3">
+              <Gamepad2 className="w-6 h-6" />
+              <span>BGMI</span>
+            </div>
+            {activeGame === 'bgmi' && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-400/20"
+                layoutId="activeGame"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+          </motion.button>
+
+          <motion.button
             onClick={() => setActiveGame('freefire')}
-            className={`flex-1 px-6 py-4 rounded-xl font-semibold transition-all ${
+            className={cn(
+              "flex-1 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 relative overflow-hidden",
               activeGame === 'freefire'
-                ? 'bg-gradient-freefire text-white shadow-lg'
-                : 'glass-effect text-gray-300 hover:text-white'
-            }`}
+                ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/25'
+                : 'glass-effect text-gray-300 hover:text-white border border-white/10 hover:border-red-500/30 hover:bg-red-500/5'
+            )}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Gamepad2 className="w-5 h-5 inline mr-2" />
-            Free Fire
-          </button>
-        </div>
+            <div className="flex items-center justify-center space-x-3">
+              <Gamepad2 className="w-6 h-6" />
+              <span>Free Fire</span>
+            </div>
+            {activeGame === 'freefire' && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-pink-400/20"
+                layoutId="activeGame"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+          </motion.button>
+        </motion.div>
         
         {/* Tournament Type Selector */}
         <div className="flex gap-4 mb-6">
@@ -292,7 +476,7 @@ export default function AdminDashboard() {
               {type}
               {tournaments[type] && (
                 <span className="ml-2 text-xs opacity-80">
-                  ({tournaments[type].approvedCount}/{tournaments[type].maxSlots})
+                  ({tournaments[type].approvedCount || 0}/{tournaments[type].maxSlots || 0})
                 </span>
               )}
             </button>
@@ -318,7 +502,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Available:</span>
-                <span className="font-bold text-blue-400">{currentTournament.availableSlots || 0}</span>
+                <span className="font-bold text-blue-400">{currentTournament.availableSlots || currentTournament.maxSlots || 0}</span>
               </div>
             </div>
           </div>
@@ -336,7 +520,8 @@ export default function AdminDashboard() {
                   alt="QR Code" 
                   width={150}
                   height={150}
-                  className="rounded-lg mx-auto bg-white p-2"
+                  className="rounded-lg mx-auto bg-white p-2 cursor-pointer"
+                  onClick={() => handleImageClick(currentTournament.qrCodeUrl)}
                 />
                 <label className="btn-primary text-sm flex items-center justify-center space-x-2 cursor-pointer">
                   <Upload className="w-4 h-4" />
@@ -368,7 +553,7 @@ export default function AdminDashboard() {
           <div className="glass-effect rounded-xl p-6 border border-white/10">
             <h3 className="text-lg font-semibold mb-4">Actions</h3>
             <button
-              onClick={handleResetTournament}
+              onClick={() => handleConfirmAction(null, null, 'reset')}
               className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center justify-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
@@ -402,16 +587,19 @@ export default function AdminDashboard() {
         {/* Registrations List */}
         <div className="space-y-4">
           {loading ? (
-            <div className="glass-effect rounded-xl p-12 text-center">
-              <Loader className="w-12 h-12 animate-spin mx-auto mb-4 text-purple-400" />
-              <p className="text-gray-400">Loading registrations...</p>
-            </div>
-          ) : registrations.length === 0 ? (
+            <motion.div 
+              className="glass-effect rounded-xl p-12 text-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <AdvancedLoader type="gaming" size="lg" text="Loading registrations..." />
+            </motion.div>
+          ) : filteredRegistrations.length === 0 ? (
             <div className="glass-effect rounded-xl p-12 text-center">
               <p className="text-gray-400">No registrations found</p>
             </div>
           ) : (
-            registrations.map((reg) => (
+            filteredRegistrations.map((reg) => (
               <div key={reg._id} className="glass-effect rounded-xl p-6 border border-white/10">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                   {/* Registration Details */}
@@ -458,7 +646,7 @@ export default function AdminDashboard() {
                       
                       <div className="flex items-center space-x-2 text-xs text-gray-500 pt-2">
                         <Clock className="w-3 h-3" />
-                        <span>{format(new Date(reg.createdAt), 'PPp')}</span>
+                        <span>{new Date(reg.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -467,10 +655,10 @@ export default function AdminDashboard() {
                   <div className="space-y-3">
                     <h4 className="font-semibold text-sm text-gray-400">Payment Details</h4>
                     
-                    {reg.payment.screenshot && (
+                    {reg.payment?.screenshot && (
                       <div 
                         className="cursor-pointer"
-                        onClick={() => setSelectedImage(reg.payment.screenshot)}
+                        onClick={() => handleImageClick(reg.payment.screenshot)}
                       >
                         <Image 
                           src={reg.payment.screenshot} 
@@ -484,7 +672,7 @@ export default function AdminDashboard() {
                     
                     <div className="flex items-center space-x-2 text-sm">
                       <span className="text-gray-400">Transaction ID:</span>
-                      <span className="font-mono text-xs">{reg.payment.transactionId}</span>
+                      <span className="font-mono text-xs">{reg.payment?.transactionId}</span>
                     </div>
                   </div>
                   
@@ -539,25 +727,28 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-      
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={executeConfirmAction}
+        title="Confirm Action"
+        message={confirmMessage}
+        confirmText="Confirm"
+        cancelText="Cancel"
+        variant={confirmAction?.actionType === 'delete' || confirmAction?.actionType === 'reset' ? 'danger' : 'primary'}
+        loading={Object.values(processing).some(Boolean)}
+      />
+
       {/* Image Modal */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="max-w-4xl max-h-screen">
-            <Image 
-              src={selectedImage} 
-              alt="Payment Screenshot" 
-              width={800}
-              height={800}
-              className="rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={imageModalSrc}
+        alt="Payment Screenshot"
+        title="Payment Screenshot"
+      />
     </div>
   )
 }
-

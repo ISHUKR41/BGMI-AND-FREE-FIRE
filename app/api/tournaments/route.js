@@ -3,59 +3,78 @@ import connectDB from '@/lib/mongodb'
 import Tournament from '@/models/Tournament'
 import Registration from '@/models/Registration'
 import { TOURNAMENT_CONFIG } from '@/lib/constants'
-import { isAuthenticated, getTokenFromRequest, verifyToken } from '@/lib/auth'
+import { isAuthenticated } from '@/lib/auth'
 
-// GET all tournaments with current slot counts
+// GET all tournaments
 export async function GET(request) {
   try {
     await connectDB()
     
     const { searchParams } = new URL(request.url)
     const gameType = searchParams.get('gameType')
-    const tournamentType = searchParams.get('tournamentType')
     
     let query = { isActive: true }
-    
     if (gameType) query.gameType = gameType
-    if (tournamentType) query.tournamentType = tournamentType
     
-    const tournaments = await Tournament.find(query)
-    
-    // Calculate current registration counts
-    const tournamentsWithCounts = await Promise.all(
-      tournaments.map(async (tournament) => {
-        const approvedCount = await Registration.countDocuments({
-          gameType: tournament.gameType,
-          tournamentType: tournament.tournamentType,
-          status: 'approved',
-        })
-        
-        const pendingCount = await Registration.countDocuments({
-          gameType: tournament.gameType,
-          tournamentType: tournament.tournamentType,
-          status: 'pending',
-        })
-        
-        return {
-          _id: tournament._id,
-          gameType: tournament.gameType,
-          tournamentType: tournament.tournamentType,
-          maxSlots: tournament.maxSlots,
-          approvedCount,
-          pendingCount,
-          availableSlots: tournament.maxSlots - approvedCount,
-          isFull: approvedCount >= tournament.maxSlots,
-          qrCodeUrl: tournament.qrCodeUrl,
-          roomId: tournament.roomId,
-          roomPassword: tournament.roomPassword,
-          scheduledTime: tournament.scheduledTime,
+    // Initialize tournaments if they don't exist
+    for (const gType of ['bgmi', 'freefire']) {
+      for (const tType of ['solo', 'duo', 'squad']) {
+        const existing = await Tournament.findOne({ gameType: gType, tournamentType: tType })
+        if (!existing) {
+          const config = TOURNAMENT_CONFIG[gType][tType]
+          await Tournament.create({
+            gameType: gType,
+            tournamentType: tType,
+            maxSlots: config.maxSlots,
+            entryFee: config.entryFee,
+            winnerPrize: config.winnerPrize,
+            runnerUpPrize: config.runnerUpPrize,
+            perKillReward: config.perKill,
+          })
         }
+      }
+    }
+    
+    const tournaments = await Tournament.find(query).sort({ gameType: 1, tournamentType: 1 })
+    
+    // Update counts for each tournament
+    for (let tournament of tournaments) {
+      const approvedCount = await Registration.countDocuments({
+        gameType: tournament.gameType,
+        tournamentType: tournament.tournamentType,
+        status: 'approved',
       })
-    )
+      
+      const pendingCount = await Registration.countDocuments({
+        gameType: tournament.gameType,
+        tournamentType: tournament.tournamentType,
+        status: 'pending',
+      })
+      
+      const rejectedCount = await Registration.countDocuments({
+        gameType: tournament.gameType,
+        tournamentType: tournament.tournamentType,
+        status: 'rejected',
+      })
+      
+      const totalCount = await Registration.countDocuments({
+        gameType: tournament.gameType,
+        tournamentType: tournament.tournamentType,
+      })
+      
+      tournament.approvedCount = approvedCount
+      tournament.pendingCount = pendingCount
+      tournament.rejectedCount = rejectedCount
+      tournament.registeredCount = totalCount
+      tournament.availableSlots = Math.max(0, tournament.maxSlots - approvedCount)
+      tournament.isFull = approvedCount >= tournament.maxSlots
+      
+      await tournament.save()
+    }
     
     return NextResponse.json({
       success: true,
-      tournaments: tournamentsWithCounts,
+      tournaments,
     })
   } catch (error) {
     console.error('Get tournaments error:', error)
@@ -69,7 +88,6 @@ export async function GET(request) {
 // PUT - Update tournament (admin only)
 export async function PUT(request) {
   try {
-    // Check authentication
     if (!isAuthenticated(request)) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
@@ -79,7 +97,7 @@ export async function PUT(request) {
     
     await connectDB()
     
-    const { gameType, tournamentType, qrCodeUrl, roomId, roomPassword, scheduledTime } = await request.json()
+    const { gameType, tournamentType, qrCodeUrl, roomId, roomPassword, startTime, endTime } = await request.json()
     
     if (!gameType || !tournamentType) {
       return NextResponse.json(
@@ -88,29 +106,36 @@ export async function PUT(request) {
       )
     }
     
-    // Find or create tournament
     let tournament = await Tournament.findOne({ gameType, tournamentType })
     
     if (!tournament) {
-      // Create new tournament
-      const config = TOURNAMENT_CONFIG[gameType][tournamentType]
+      const config = TOURNAMENT_CONFIG[gameType]?.[tournamentType]
+      if (!config) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid tournament configuration' },
+          { status: 400 }
+        )
+      }
+      
       tournament = await Tournament.create({
         gameType,
         tournamentType,
         maxSlots: config.maxSlots,
-        qrCodeUrl: qrCodeUrl || '',
-        roomId: roomId || '',
-        roomPassword: roomPassword || '',
-        scheduledTime: scheduledTime || null,
+        entryFee: config.entryFee,
+        winnerPrize: config.winnerPrize,
+        runnerUpPrize: config.runnerUpPrize,
+        perKillReward: config.perKill,
       })
-    } else {
-      // Update existing tournament
-      if (qrCodeUrl !== undefined) tournament.qrCodeUrl = qrCodeUrl
-      if (roomId !== undefined) tournament.roomId = roomId
-      if (roomPassword !== undefined) tournament.roomPassword = roomPassword
-      if (scheduledTime !== undefined) tournament.scheduledTime = scheduledTime
-      await tournament.save()
     }
+    
+    // Update fields
+    if (qrCodeUrl !== undefined) tournament.qrCodeUrl = qrCodeUrl
+    if (roomId !== undefined) tournament.roomId = roomId
+    if (roomPassword !== undefined) tournament.roomPassword = roomPassword
+    if (startTime) tournament.startTime = new Date(startTime)
+    if (endTime) tournament.endTime = new Date(endTime)
+    
+    await tournament.save()
     
     return NextResponse.json({
       success: true,
@@ -125,4 +150,3 @@ export async function PUT(request) {
     )
   }
 }
-

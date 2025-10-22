@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import connectDB from '@/lib/mongodb'
 import Admin from '@/models/Admin'
-import { generateToken } from '@/lib/auth'
+import { comparePassword, generateToken } from '@/lib/auth'
+import { cookies } from 'next/headers'
 
 export async function POST(request) {
   try {
@@ -17,8 +17,8 @@ export async function POST(request) {
       )
     }
     
-    // Find admin
-    const admin = await Admin.findOne({ username })
+    // Find admin by username
+    const admin = await Admin.findOne({ username }).select('+password')
     
     if (!admin) {
       return NextResponse.json(
@@ -27,8 +27,8 @@ export async function POST(request) {
       )
     }
     
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, admin.password)
+    // Verify password
+    const isPasswordValid = await comparePassword(password, admin.password)
     
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -41,39 +41,39 @@ export async function POST(request) {
     admin.lastLogin = new Date()
     await admin.save()
     
-    // Generate token
+    // Generate JWT token
     const token = generateToken({
       id: admin._id,
       username: admin.username,
       role: admin.role,
     })
     
-    // Create response with cookie
-    const response = NextResponse.json({
-      success: true,
-      message: 'Login successful',
-      admin: {
-        username: admin.username,
-        role: admin.role,
-      },
-      token,
-    })
-    
-    // Set HTTP-only cookie
-    response.cookies.set('token', token, {
+    // Set cookie
+    const cookieStore = cookies()
+    cookieStore.set('adminToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: '/',
     })
     
-    return response
+    return NextResponse.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      admin: {
+        id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+      },
+    })
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: 'Login failed' },
       { status: 500 }
     )
   }
 }
-

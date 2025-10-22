@@ -1,304 +1,321 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { Trophy, Target, Zap, Shield, ArrowRight, Gamepad2, Users, IndianRupee } from 'lucide-react'
+import { Trophy, Target, Zap, Shield, ArrowRight, Gamepad2, Users, IndianRupee, Star, Play, Award } from 'lucide-react'
 import { GAME_INFO, TOURNAMENT_CONFIG } from '@/lib/constants'
+import { StatCard, PrizeCounter, AnimatedCounter } from '@/components/AnimatedCounter'
+import ParticleBackground from '@/components/ParticleBackground'
+import TypewriterEffect from '@/components/TypewriterEffect'
+import CountUpAnimation from '@/components/CountUpAnimation'
+import InteractiveBackground from '@/components/InteractiveBackground'
+import AdvancedLoader from '@/components/AdvancedLoader'
+import FloatingActionButton from '@/components/FloatingActionButton'
+import TooltipWrapper from '@/components/TooltipWrapper'
+import ModernHero from '@/components/ModernHero'
+import ModernFeatures from '@/components/ModernFeatures'
+import ModernGameCards from '@/components/ModernGameCards'
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 60 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6 }
+}
+
+const stagger = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
 
 export default function HomePage() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const { ref: heroRef, inView: heroInView } = useInView({ threshold: 0.1 })
+  const { ref: statsRef, inView: statsInView } = useInView({ threshold: 0.3 })
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: (e.clientY / window.innerHeight) * 2 - 1,
+      })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Advanced Interactive Background */}
+      <InteractiveBackground />
+      <ParticleBackground />
+      
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-6 animate-slide-up">
-            <div className="inline-block px-4 py-2 bg-gradient-gaming rounded-full text-sm font-semibold mb-4">
-              🎮 Professional Gaming Platform
-            </div>
-            
-            <h1 className="text-5xl sm:text-7xl font-bold leading-tight">
-              <span className="bg-gradient-gaming bg-clip-text text-transparent">
-                Compete. Dominate.
-              </span>
-              <br />
-              <span className="text-white">Win Big!</span>
-            </h1>
-            
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Join India's most exciting BGMI and Free Fire tournaments. Play with the best, 
-              showcase your skills, and win amazing cash prizes!
-            </p>
-            
-            <div className="flex flex-wrap gap-4 justify-center pt-8">
-              <Link href="/bgmi" className="btn-bgmi flex items-center space-x-2 group">
-                <span>BGMI Tournaments</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              
-              <Link href="/freefire" className="btn-freefire flex items-center space-x-2 group">
-                <span>Free Fire Tournaments</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Features Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Why Choose <span className="bg-gradient-gaming bg-clip-text text-transparent">Our Platform?</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="gaming-card rounded-xl p-6">
-              <Trophy className="w-12 h-12 text-yellow-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Big Prizes</h3>
-              <p className="text-gray-400">
-                Win up to ₹350 per match plus per-kill bonuses
-              </p>
-            </div>
-            
-            <div className="gaming-card rounded-xl p-6">
-              <Zap className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Quick Registration</h3>
-              <p className="text-gray-400">
-                Register in minutes and get instant confirmation
-              </p>
-            </div>
-            
-            <div className="gaming-card rounded-xl p-6">
-              <Shield className="w-12 h-12 text-green-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Fair Play</h3>
-              <p className="text-gray-400">
-                Strict anti-cheat policies and fair competition
-              </p>
-            </div>
-            
-            <div className="gaming-card rounded-xl p-6">
-              <Target className="w-12 h-12 text-red-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Multiple Modes</h3>
-              <p className="text-gray-400">
-                Solo, Duo, and Squad tournaments available
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Games Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Available <span className="bg-gradient-gaming bg-clip-text text-transparent">Tournaments</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* BGMI Card */}
-            <div className="gaming-card rounded-2xl overflow-hidden group">
-              <div className="h-64 bg-gradient-bgmi relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Gamepad2 className="w-32 h-32 text-white/80 group-hover:scale-110 transition-transform" />
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <h3 className="text-3xl font-bold mb-4 bg-gradient-bgmi bg-clip-text text-transparent">
-                  {GAME_INFO.bgmi.fullName}
-                </h3>
-                
-                <p className="text-gray-300 mb-6">
-                  {GAME_INFO.bgmi.description}
-                </p>
-                
-                <div className="space-y-3 mb-6">
-                  {GAME_INFO.bgmi.features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-gradient-bgmi rounded-full"></div>
-                      <span className="text-sm text-gray-400">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="text-center p-3 bg-orange-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-orange-400" />
-                    <div className="text-2xl font-bold text-orange-400">100</div>
-                    <div className="text-xs text-gray-400">Solo</div>
-                  </div>
-                  <div className="text-center p-3 bg-orange-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-orange-400" />
-                    <div className="text-2xl font-bold text-orange-400">50</div>
-                    <div className="text-xs text-gray-400">Duo</div>
-                  </div>
-                  <div className="text-center p-3 bg-orange-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-orange-400" />
-                    <div className="text-2xl font-bold text-orange-400">25</div>
-                    <div className="text-xs text-gray-400">Squad</div>
-                  </div>
-                </div>
-                
-                <Link href="/bgmi" className="btn-bgmi w-full flex items-center justify-center space-x-2 group">
-                  <span>Join BGMI Tournament</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </div>
-            
-            {/* Free Fire Card */}
-            <div className="gaming-card rounded-2xl overflow-hidden group">
-              <div className="h-64 bg-gradient-freefire relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Gamepad2 className="w-32 h-32 text-white/80 group-hover:scale-110 transition-transform" />
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <h3 className="text-3xl font-bold mb-4 bg-gradient-freefire bg-clip-text text-transparent">
-                  {GAME_INFO.freefire.fullName}
-                </h3>
-                
-                <p className="text-gray-300 mb-6">
-                  {GAME_INFO.freefire.description}
-                </p>
-                
-                <div className="space-y-3 mb-6">
-                  {GAME_INFO.freefire.features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-gradient-freefire rounded-full"></div>
-                      <span className="text-sm text-gray-400">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="text-center p-3 bg-red-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-red-400" />
-                    <div className="text-2xl font-bold text-red-400">48</div>
-                    <div className="text-xs text-gray-400">Solo</div>
-                  </div>
-                  <div className="text-center p-3 bg-red-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-red-400" />
-                    <div className="text-2xl font-bold text-red-400">24</div>
-                    <div className="text-xs text-gray-400">Duo</div>
-                  </div>
-                  <div className="text-center p-3 bg-red-500/10 rounded-lg">
-                    <Users className="w-5 h-5 mx-auto mb-1 text-red-400" />
-                    <div className="text-2xl font-bold text-red-400">12</div>
-                    <div className="text-xs text-gray-400">Squad</div>
-                  </div>
-                </div>
-                
-                <Link href="/freefire" className="btn-freefire w-full flex items-center justify-center space-x-2 group">
-                  <span>Join Free Fire Tournament</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
+
+      {/* Modern Hero Section */}
+      <ModernHero />
+
+      {/* Modern Features Section */}
+      <ModernFeatures />
+
+      {/* Modern Games Section */}
+      <ModernGameCards />
+
       {/* Prize Pool Section */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            <span className="bg-gradient-gaming bg-clip-text text-transparent">Prize Pool</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <motion.h2
+            className="text-4xl font-bold text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Prize Pool</span>
+          </motion.h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* BGMI Prizes */}
-            <div className="glass-effect rounded-xl p-8 border border-orange-500/30">
-              <h3 className="text-2xl font-bold mb-6 text-orange-400">BGMI Tournaments</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-yellow-500/10 rounded-lg">
-                  <span className="text-gray-300">Winner Prize</span>
-                  <div className="flex items-center space-x-1 text-yellow-400 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>350</span>
+            <motion.div
+              className="glass-effect rounded-2xl p-8 border border-orange-500/30 relative overflow-hidden"
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl"></div>
+
+              <div className="relative">
+                <div className="flex items-center space-x-3 mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center">
+                    <Gamepad2 className="w-6 h-6 text-white" />
                   </div>
+                  <h3 className="text-2xl font-bold text-orange-400">BGMI Tournaments</h3>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-500/10 rounded-lg">
-                  <span className="text-gray-300">Runner Up</span>
-                  <div className="flex items-center space-x-1 text-gray-300 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>250</span>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Winner Prize</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-yellow-400 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>350</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-purple-500/10 rounded-lg">
-                  <span className="text-gray-300">Per Kill</span>
-                  <div className="flex items-center space-x-1 text-purple-400 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>9</span>
+
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-500/10 to-slate-500/10 rounded-xl border border-gray-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-500/20 rounded-lg flex items-center justify-center">
+                        <Award className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Runner Up</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-300 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>250</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <Target className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Per Kill</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-purple-400 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>9</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
+            </motion.div>
+
             {/* Free Fire Prizes */}
-            <div className="glass-effect rounded-xl p-8 border border-red-500/30">
-              <h3 className="text-2xl font-bold mb-6 text-red-400">Free Fire Tournaments</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-yellow-500/10 rounded-lg">
-                  <span className="text-gray-300">Winner Prize</span>
-                  <div className="flex items-center space-x-1 text-yellow-400 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>350</span>
+            <motion.div
+              className="glass-effect rounded-2xl p-8 border border-red-500/30 relative overflow-hidden"
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl"></div>
+
+              <div className="relative">
+                <div className="flex items-center space-x-3 mb-8">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-pink-500 rounded-xl flex items-center justify-center">
+                    <Gamepad2 className="w-6 h-6 text-white" />
                   </div>
+                  <h3 className="text-2xl font-bold text-red-400">Free Fire Tournaments</h3>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-500/10 rounded-lg">
-                  <span className="text-gray-300">Runner Up</span>
-                  <div className="flex items-center space-x-1 text-gray-300 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>150</span>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Winner Prize</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-yellow-400 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>350</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-purple-500/10 rounded-lg">
-                  <span className="text-gray-300">Per Kill</span>
-                  <div className="flex items-center space-x-1 text-purple-400 font-bold text-xl">
-                    <IndianRupee className="w-5 h-5" />
-                    <span>5</span>
+
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-500/10 to-slate-500/10 rounded-xl border border-gray-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-500/20 rounded-lg flex items-center justify-center">
+                        <Award className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Runner Up</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-300 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>150</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <Target className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <span className="text-gray-300 font-medium">Per Kill</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-purple-400 font-bold text-2xl">
+                      <IndianRupee className="w-6 h-6" />
+                      <span>5</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
-      
+
       {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center glass-effect rounded-2xl p-12 border border-white/10">
-          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-6" />
-          <h2 className="text-4xl font-bold mb-4">
-            Ready to Show Your Skills?
-          </h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Join thousands of players competing for amazing prizes!
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/bgmi" className="btn-bgmi">
-              Register for BGMI
-            </Link>
-            <Link href="/freefire" className="btn-freefire">
-              Register for Free Fire
-            </Link>
-          </div>
+      <section className="py-20 px-4 relative">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            className="text-center glass-effect rounded-3xl p-12 md:p-16 border border-white/10 relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-orange-500/10"></div>
+
+            <div className="relative">
+              <motion.div
+                className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl flex items-center justify-center mx-auto mb-8"
+                initial={{ y: 50, rotate: -10 }}
+                whileInView={{ y: 0, rotate: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
+                <Trophy className="w-10 h-10 text-white" />
+              </motion.div>
+
+              <motion.h2
+                className="text-4xl md:text-5xl font-bold mb-6"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
+              >
+                Ready to Show Your{' '}
+                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Skills?
+                </span>
+              </motion.h2>
+
+              <motion.p
+                className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                viewport={{ once: true }}
+              >
+                Join thousands of players competing for amazing prizes in our professional gaming tournaments!
+              </motion.p>
+
+              <motion.div
+                className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <Link href="/bgmi" className="btn-bgmi px-8 py-4 text-lg font-semibold w-full sm:w-auto">
+                  Register for BGMI
+                </Link>
+                <Link href="/freefire" className="btn-freefire px-8 py-4 text-lg font-semibold w-full sm:w-auto">
+                  Register for Free Fire
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
       </section>
-      
+
       {/* Footer */}
-      <footer className="py-8 px-4 border-t border-white/10">
-        <div className="max-w-7xl mx-auto text-center text-gray-400">
-          <p>&copy; 2025 Gaming Tournaments. All rights reserved.</p>
-          <p className="mt-2 text-sm">Play responsibly. 18+ only.</p>
+      <footer className="py-12 px-4 border-t border-white/10 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <motion.div
+              className="flex items-center justify-center space-x-2 mb-4"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center">
+                <Gamepad2 className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Gaming Tournaments
+              </span>
+            </motion.div>
+
+            <motion.p
+              className="text-gray-400 mb-4"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
+              &copy; 2025 Professional Gaming Platform. All rights reserved.
+            </motion.p>
+
+            <motion.p
+              className="text-sm text-gray-500"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              Play responsibly. 18+ only. | Fair play guaranteed.
+            </motion.p>
+          </div>
         </div>
       </footer>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </div>
   )
 }

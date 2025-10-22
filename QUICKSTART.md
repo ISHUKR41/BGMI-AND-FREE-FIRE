@@ -1,145 +1,226 @@
 # ⚡ Quick Start Guide
 
-Get your tournament platform running in 5 minutes!
+Get your tournament platform up and running in **less than 5 minutes**!
 
-## 🎯 What You'll Need
+## 🚀 Fast Setup (3 Steps)
 
-- Node.js 18+ installed
-- 5 minutes of your time
-- MongoDB Atlas account (free)
-- Cloudinary account (free)
-
-## 🚀 Steps
-
-### 1. Clone & Install (1 min)
+### Step 1: Installation (1 min)
 
 ```bash
-git clone <your-repo>
-cd bgmi-freefire-tournament
-npm install
+# Clone and install
+git clone <your-repo-url>
+cd "BGMI & FREE FIRE"
+yarn install  # or: npm install
 ```
 
-### 2. Setup Environment (2 min)
+### Step 2: Environment Setup (2 min)
 
-Create `.env.local`:
+1. **Create `.env.local` file:**
+
+```bash
+cp .env.example .env.local
+```
+
+2. **Add your credentials:**
 
 ```env
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/tournament
-JWT_SECRET=any-long-random-string-here-make-it-secure
+# MongoDB (Get from mongodb.com/cloud/atlas)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/tournament-db
+
+# JWT Secret (Generate with command below)
+JWT_SECRET=your-secret-key
+
+# Cloudinary (Get from cloudinary.com)
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-**Get MongoDB URI:**
-1. Go to [mongodb.com/cloud/atlas](https://mongodb.com/cloud/atlas)
-2. Create free cluster
-3. Get connection string
-4. Replace password and dbname
+**Generate JWT Secret:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-**Get Cloudinary Credentials:**
-1. Go to [cloudinary.com](https://cloudinary.com)
-2. Sign up free
-3. Copy Cloud Name, API Key, API Secret from dashboard
-
-### 3. Initialize Database (1 min)
+### Step 3: Initialize & Run (1 min)
 
 ```bash
-# Create tournaments
-npm run seed:tournaments
+# Initialize database with tournaments
+yarn seed:tournaments  # or: npm run seed:tournaments
 
 # Create admin account
-npm run seed:admin
+yarn seed:admin  # or: npm run seed:admin
+
+# Start development server
+yarn dev  # or: npm run dev
 ```
 
-### 4. Start Server (30 sec)
+## 🎉 You're Ready!
 
+Open [http://localhost:3000](http://localhost:3000)
+
+**Admin Login:** [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+- Username: `admin`
+- Password: `admin123`
+
+---
+
+## 📱 Pages Overview
+
+### Public Pages
+- `/` - Homepage with game selection
+- `/bgmi` - BGMI tournaments (Solo, Duo, Squad)
+- `/freefire` - Free Fire tournaments (Solo, Duo, Squad)
+
+### Admin Pages
+- `/admin/login` - Admin login
+- `/admin` - Admin dashboard with registration management
+
+---
+
+## 🎯 First Steps After Setup
+
+### 1. Login to Admin Panel
+```
+http://localhost:3000/admin/login
+Username: admin
+Password: admin123
+```
+
+### 2. Upload Payment QR Code
+- Select game type (BGMI/Free Fire)
+- Select tournament type (Solo/Duo/Squad)
+- Upload your payment QR code image
+- Save changes
+
+### 3. Test Registration Flow
+- Go to BGMI or Free Fire page
+- Select a tournament type
+- Fill in registration form
+- Upload payment screenshot
+- Submit registration
+
+### 4. Manage Registrations
+- Go to admin dashboard
+- Review pending registrations
+- Verify payment screenshots
+- Approve or reject registrations
+
+---
+
+## 🐛 Troubleshooting
+
+### MongoDB Connection Failed
 ```bash
-npm run dev
+# Check MongoDB URI in .env.local
+# Ensure IP whitelist includes your IP in MongoDB Atlas
+# Format: mongodb+srv://username:password@cluster.mongodb.net/dbname
 ```
 
-### 5. Access Your Site (30 sec)
-
-- **Homepage**: http://localhost:3000
-- **Admin Login**: http://localhost:3000/admin/login
-  - Username: `admin`
-  - Password: `admin123` (change this!)
-
-## ✅ You're Done!
-
-Your tournament platform is running! Now:
-
-1. Login to admin panel
-2. Upload payment QR codes
-3. Test registration
-4. Share with players!
-
-## 📱 Test Registration
-
-1. Go to http://localhost:3000
-2. Click BGMI or Free Fire
-3. Select Solo tournament
-4. Fill form with test data
-5. Upload any image as payment screenshot
-6. Submit!
-
-## 🔐 Admin Panel
-
-1. Go to http://localhost:3000/admin/login
-2. Login with `admin` / `admin123`
-3. View registrations
-4. Approve/reject entries
-5. Upload QR codes
-
-## 🚀 Deploy to Production
-
-When ready to go live:
-
+### Admin Login Not Working
 ```bash
-# Push to GitHub
-git add .
-git commit -m "Initial commit"
-git push origin main
+# Re-run admin seed
+yarn seed:admin
 
-# Deploy to Vercel
-# Go to vercel.com and import your repo
-# Add environment variables
-# Deploy!
+# Clear browser cache and try again
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment guide.
-
-## 🆘 Troubleshooting
-
-**Can't connect to MongoDB?**
-- Check connection string format
-- Verify password has no special characters or is URL-encoded
-- Whitelist your IP (0.0.0.0/0 for all IPs)
-
-**Port 3000 already in use?**
+### Cloudinary Upload Fails
 ```bash
-PORT=3001 npm run dev
+# Verify credentials in .env.local
+# Check file size (max 5MB)
+# Ensure image format is supported (JPEG, PNG, WebP)
 ```
 
-**Module not found?**
+---
+
+## 🌐 Deploy to Vercel (1-Click)
+
+### Method 1: Vercel CLI
 ```bash
-rm -rf node_modules
-npm install
+npm i -g vercel
+vercel login
+vercel  # Follow prompts
 ```
 
-## 📚 Next Steps
+### Method 2: Git Integration
+1. Push code to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new)
+3. Import repository
+4. Add environment variables
+5. Deploy!
 
-- Read [SETUP.md](SETUP.md) for detailed setup
-- Read [DEPLOYMENT.md](DEPLOYMENT.md) for production deployment
-- Customize tournament settings in `lib/constants.js`
-- Update colors in `tailwind.config.js`
+**Don't forget to add all environment variables in Vercel dashboard!**
 
-## 🎉 That's It!
+---
 
-You now have a fully functional tournament platform!
+## 📚 Need More Help?
 
-Questions? Check the [README.md](README.md) for more details.
+- **Full Setup Guide:** [SETUP_GUIDE.md](./SETUP_GUIDE.md)
+- **Features:** [FEATURES.md](./FEATURES.md)
+- **Deployment:** [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Main README:** [README.md](./README.md)
 
-Happy tournament hosting! 🏆
+---
 
+## 🎮 Default Credentials
+
+### Admin Account
+```
+Username: admin
+Password: admin123
+⚠️  Change password after first login!
+```
+
+### Tournament Slots
+```
+BGMI:
+  - Solo: 100 slots (₹20 entry)
+  - Duo: 50 teams (₹40 entry)
+  - Squad: 25 teams (₹80 entry)
+
+Free Fire:
+  - Solo: 48 slots (₹20 entry)
+  - Duo: 24 teams (₹40 entry)
+  - Squad: 12 teams (₹80 entry)
+```
+
+---
+
+## ✅ Quick Checklist
+
+- [ ] Install Node.js 18+
+- [ ] Clone repository
+- [ ] Run `yarn install`
+- [ ] Create `.env.local`
+- [ ] Add MongoDB URI
+- [ ] Generate JWT secret
+- [ ] Add Cloudinary credentials
+- [ ] Run `yarn seed:tournaments`
+- [ ] Run `yarn seed:admin`
+- [ ] Run `yarn dev`
+- [ ] Open http://localhost:3000
+- [ ] Login to admin panel
+- [ ] Upload QR code
+- [ ] Test registration
+- [ ] 🎉 Start accepting registrations!
+
+---
+
+## 🚀 Production Checklist
+
+Before deploying to production:
+
+- [ ] Change admin password
+- [ ] Use strong JWT secret (32+ characters)
+- [ ] Configure MongoDB Atlas production cluster
+- [ ] Set up Cloudinary production account
+- [ ] Add custom domain in Vercel
+- [ ] Enable HTTPS
+- [ ] Test all features
+- [ ] Monitor error logs
+- [ ] Set up backups
+- [ ] Configure analytics (optional)
+
+---
+
+**Happy Gaming! 🎮**

@@ -1,303 +1,217 @@
-# 🎮 BGMI & Free Fire Tournament Platform
+# 🎮 Professional Gaming Tournament Platform
 
-A professional, modern tournament management platform for BGMI and Free Fire games. Built with Next.js 14, MongoDB, and Tailwind CSS.
+A modern, professional tournament management system for BGMI and Free Fire with real-time slot tracking, admin dashboard, and secure payment integration.
 
 ## ✨ Features
 
-### For Players
-- 🏆 **Multiple Tournament Modes**: Solo, Duo, and Squad tournaments for both games
-- 💰 **Transparent Prize Pool**: Clear pricing and reward structure
-- 📱 **Real-time Slot Tracking**: See available slots in real-time
-- 🔒 **Secure Payment**: Upload payment screenshot and transaction ID
-- ⚡ **Instant Registration**: Quick and easy registration process
-- 📊 **Live Updates**: Tournament status updates every 30 seconds
+- **🎯 Multi-Game Support**: BGMI and Free Fire tournaments
+- **👥 Tournament Types**: Solo, Duo, and Squad matches  
+- **💰 Prize Management**: Automated prize distribution system
+- **📱 Responsive Design**: Works on all devices
+- **🔒 Secure Authentication**: JWT-based admin authentication
+- **📊 Real-time Updates**: Live slot tracking and registration counts
+- **💳 Payment Integration**: QR code payment with screenshot verification
+- **🎨 Modern UI**: GitHub/Vercel-inspired professional design
+- **⚡ Performance**: Optimized for Vercel deployment
 
-### For Admins
-- 🛡️ **Secure Admin Panel**: JWT-based authentication
-- ✅ **Approval System**: Approve or reject registrations with payment verification
-- 📸 **Payment Verification**: View payment screenshots and transaction IDs
-- 📊 **Tournament Management**: Track registrations, slots, and statistics
-- 🔄 **Tournament Reset**: Reset tournaments when needed
-- 🎯 **QR Code Management**: Upload and manage payment QR codes
-- 📱 **Responsive Dashboard**: Manage from any device
+## 🚀 Tech Stack
 
-## 🛠️ Tech Stack
+- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS
+- **Backend**: Next.js API Routes, MongoDB, Mongoose
+- **Authentication**: JWT tokens with bcrypt password hashing
+- **File Upload**: Cloudinary integration
+- **Animations**: Framer Motion
+- **UI Components**: Custom components with modern design
+- **Deployment**: Vercel-ready configuration
 
-- **Frontend & Backend**: Next.js 14 (App Router)
-- **Database**: MongoDB with Mongoose
-- **Styling**: Tailwind CSS
-- **File Storage**: Cloudinary
-- **Authentication**: JWT with bcrypt
-- **Form Handling**: React Hook Form with Zod validation
-- **State Management**: React Hooks
-- **Notifications**: React Hot Toast
-- **Deployment**: Vercel (optimized)
+## 📋 Tournament Configuration
 
-## 📦 Installation
+### BGMI Tournaments
+- **Solo**: 100 players, ₹20 entry, ₹350 winner, ₹250 runner-up, ₹9 per kill
+- **Duo**: 50 teams, ₹40 entry, ₹350 winner, ₹250 runner-up, ₹9 per kill  
+- **Squad**: 25 teams, ₹80 entry, ₹350 winner, ₹250 runner-up, ₹9 per kill
+
+### Free Fire Tournaments
+- **Solo**: 48 players, ₹20 entry, ₹350 winner, ₹150 runner-up, ₹5 per kill
+- **Duo**: 24 teams, ₹40 entry, ₹350 winner, ₹150 runner-up, ₹5 per kill
+- **Squad**: 12 teams, ₹80 entry, ₹350 winner, ₹150 runner-up, ₹5 per kill
+
+## 🛠️ Installation
 
 1. **Clone the repository**
 ```bash
-git clone <your-repo-url>
-cd bgmi-freefire-tournament
+git clone <repository-url>
+cd tournament-platform
 ```
 
 2. **Install dependencies**
 ```bash
 npm install
+# or
+yarn install
 ```
 
-3. **Setup Environment Variables**
+3. **Environment Setup**
+```bash
+cp .env.example .env.local
+```
 
-Create a `.env.local` file in the root directory:
-
+4. **Configure Environment Variables**
 ```env
-# MongoDB Connection String
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/tournament?retryWrites=true&w=majority
-
-# JWT Secret
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# Next.js URL
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+MONGODB_URI=your-mongodb-connection-string
+JWT_SECRET=your-jwt-secret
+CLOUDINARY_CLOUD_NAME=your-cloudinary-name
+CLOUDINARY_API_KEY=your-cloudinary-key
+CLOUDINARY_API_SECRET=your-cloudinary-secret
 ```
 
-4. **Run the development server**
+5. **Seed Initial Data**
+```bash
+npm run seed:all
+```
+
+6. **Run Development Server**
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🚀 Deployment to Vercel
+## 📁 Project Structure
 
-### Prerequisites
-
-1. **MongoDB Atlas Account** (Free tier available)
-   - Create a cluster at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-   - Get your connection string
-   - Whitelist all IPs (0.0.0.0/0) for Vercel deployment
-
-2. **Cloudinary Account** (Free tier available)
-   - Sign up at [cloudinary.com](https://cloudinary.com)
-   - Get your cloud name, API key, and API secret
-
-### Deployment Steps
-
-1. **Install Vercel CLI** (optional)
-```bash
-npm i -g vercel
+```
+tournament-platform/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── admin/             # Admin pages
+│   ├── bgmi/              # BGMI tournament page
+│   ├── freefire/          # Free Fire tournament page
+│   └── page.jsx           # Homepage
+├── components/            # React components
+├── lib/                   # Utility functions
+├── models/                # MongoDB models
+├── public/                # Static assets
+└── scripts/               # Database seeding scripts
 ```
 
-2. **Deploy via Vercel Dashboard** (Recommended)
-   - Push your code to GitHub
-   - Go to [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Add environment variables in Vercel project settings
-   - Deploy!
+## 🔧 API Endpoints
 
-3. **Deploy via CLI**
-```bash
-vercel
-```
+### Authentication
+- `POST /api/auth/login` - Admin login
+- `POST /api/auth/logout` - Admin logout  
+- `POST /api/auth/init` - Initialize default admin
 
-4. **Add Environment Variables in Vercel**
-   - Go to Project Settings → Environment Variables
-   - Add all variables from `.env.local`
-   - Redeploy if needed
+### Tournaments
+- `GET /api/tournaments` - Get all tournaments
+- `PUT /api/tournaments` - Update tournament (admin)
+- `POST /api/tournaments/reset` - Reset tournament (admin)
 
-### Post-Deployment Setup
+### Registrations  
+- `GET /api/registrations` - Get registrations (admin)
+- `POST /api/registrations` - Create registration
+- `PATCH /api/registrations/[id]` - Approve/reject registration
+- `DELETE /api/registrations/[id]` - Delete registration
 
-1. **Initialize Tournaments**
-   - Visit: `https://your-domain.vercel.app/api/tournaments/init`
-   - This creates all tournament slots (one-time setup)
+### Upload
+- `POST /api/upload` - Upload payment screenshot
 
-2. **Create Admin Account**
-   - Visit: `https://your-domain.vercel.app/api/auth/init`
-   - Send POST request with username and password:
-   ```json
-   {
-     "username": "admin",
-     "password": "your-secure-password"
-   }
-   ```
-   - OR use a tool like Postman/Insomnia
-   - **Important**: After creating the first admin, this route should be disabled
+## 👨‍💼 Admin Features
 
-3. **Login to Admin Panel**
-   - Visit: `https://your-domain.vercel.app/admin/login`
-   - Use the credentials you created
+### Default Admin Credentials
+- **Username**: `admin`  
+- **Password**: `admin123`
+- **Email**: `admin@tournament.com`
 
-## 📋 Tournament Configuration
-
-### BGMI Tournaments
-
-| Mode | Entry Fee | Winner | Runner Up | Per Kill | Max Slots |
-|------|-----------|--------|-----------|----------|-----------|
-| Solo | ₹20 | ₹350 | ₹250 | ₹9 | 100 |
-| Duo | ₹40 | ₹350 | ₹250 | ₹9 | 50 |
-| Squad | ₹80 | ₹350 | ₹250 | ₹9 | 25 |
-
-### Free Fire Tournaments
-
-| Mode | Entry Fee | Winner | Runner Up | Per Kill | Max Slots |
-|------|-----------|--------|-----------|----------|-----------|
-| Solo | ₹20 | ₹350 | ₹150 | ₹5 | 48 |
-| Duo | ₹40 | ₹350 | ₹150 | ₹5 | 24 |
-| Squad | ₹80 | ₹350 | ₹150 | ₹5 | 12 |
-
-## 🎯 Usage Guide
-
-### For Players
-
-1. **Choose Your Game**
-   - Visit homepage and select BGMI or Free Fire
-
-2. **Select Tournament Mode**
-   - Choose between Solo, Duo, or Squad
-
-3. **Check Availability**
-   - See available slots in real-time
-
-4. **Fill Registration Form**
-   - Enter team/player details
-   - All fields are required
-
-5. **Make Payment**
-   - Scan QR code or use provided payment method
-   - Take screenshot of payment confirmation
-
-6. **Submit Registration**
-   - Upload payment screenshot
-   - Enter transaction ID
-   - Submit form
-
-7. **Wait for Approval**
-   - Admin will verify payment
-   - You'll see status change from "Pending" to "Approved"
-
-### For Admins
-
-1. **Login**
-   - Go to `/admin/login`
-   - Enter credentials
-
-2. **View Registrations**
-   - Select game (BGMI/Free Fire)
-   - Select tournament type (Solo/Duo/Squad)
-   - Filter by status (All/Pending/Approved/Rejected)
-
-3. **Verify Payments**
-   - Click on payment screenshot to view full size
-   - Check transaction ID
-
-4. **Approve/Reject**
-   - Click Approve for valid registrations
-   - Click Reject for invalid ones (optional reason)
-
-5. **Manage QR Codes**
-   - Upload payment QR codes for each tournament
-   - Change QR codes when needed
-
-6. **Reset Tournament**
-   - Delete all registrations for a tournament
-   - Use when starting a new tournament
-
-## 🔒 Security Features
-
-- JWT-based authentication for admin
-- Password hashing with bcrypt
-- HTTP-only cookies for token storage
-- Protected API routes
-- Input validation with Zod
-- XSS protection
-- CSRF protection (via same-site cookies)
+### Admin Dashboard
+- View all registrations by game and tournament type
+- Approve/reject registrations with payment verification
+- Upload and manage QR codes for payments
+- Real-time slot tracking and statistics
+- Reset tournaments and manage data
+- Filter registrations by status
 
 ## 🎨 Design Features
 
-- Modern gradient backgrounds
-- Glassmorphism effects
-- Smooth animations and transitions
-- Responsive design (mobile-first)
-- Dark mode optimized
-- Gaming-themed color palette
-- Loading states and skeletons
-- Toast notifications
+- **Modern Glass Morphism**: Transparent backgrounds with blur effects
+- **Smooth Animations**: Framer Motion powered transitions
+- **Responsive Grid**: Tailwind CSS responsive layouts  
+- **Gaming Theme**: Dark theme with colorful accents
+- **Professional Typography**: Optimized fonts and spacing
+- **Accessibility**: ARIA labels and keyboard navigation
 
-## 📱 Mobile Responsive
+## 🚀 Deployment
 
-- Fully responsive design
-- Touch-friendly interface
-- Optimized for all screen sizes
-- Mobile navigation
-- Swipe gestures support
+### Vercel Deployment (Recommended)
 
-## 🐛 Troubleshooting
-
-### MongoDB Connection Issues
-- Verify connection string is correct
-- Whitelist your IP or use 0.0.0.0/0 for all IPs
-- Check if cluster is running
-
-### Cloudinary Upload Fails
-- Verify API credentials
-- Check file size (max 5MB)
-- Ensure image format is supported
-
-### Admin Login Issues
-- Ensure admin account is created via `/api/auth/init`
-- Check JWT_SECRET is set in environment variables
-- Clear browser cookies and try again
-
-### Deployment Errors
-- Verify all environment variables are set in Vercel
-- Check build logs for specific errors
-- Ensure MongoDB allows connections from anywhere
-
-## 🔄 Update Configuration
-
-To change tournament settings, edit `lib/constants.js`:
-
-```javascript
-export const TOURNAMENT_CONFIG = {
-  bgmi: {
-    solo: {
-      maxSlots: 100,
-      entryFee: 20,
-      // ... other settings
-    },
-  },
-}
+1. **Connect to Vercel**
+```bash
+npm i -g vercel
+vercel
 ```
+
+2. **Add Environment Variables** in Vercel dashboard
+
+3. **Deploy**
+```bash
+vercel --prod
+```
+
+### Environment Variables for Production
+- Set up MongoDB Atlas cluster
+- Configure Cloudinary account  
+- Generate secure JWT secret
+- Update environment variables in Vercel
+
+## 🔒 Security Features
+
+- JWT authentication with httpOnly cookies
+- Password hashing with bcrypt
+- Input validation and sanitization
+- File upload validation
+- CORS protection
+- SQL injection prevention with Mongoose
+
+## 📱 Mobile Responsiveness
+
+- Fully responsive design for all screen sizes
+- Touch-friendly interface
+- Optimized mobile navigation
+- Fast loading on mobile networks
+- Progressive Web App ready
+
+## 🧪 Testing
+
+```bash
+# Run linting
+npm run lint
+
+# Check for type errors  
+npm run type-check
+
+# Build for production
+npm run build
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Support
+## 🙏 Acknowledgments
 
-For issues or questions:
-- Open an issue on GitHub
-- Contact admin team
-
-## 🚧 Future Enhancements
-
-- [ ] Email notifications
-- [ ] SMS notifications via WhatsApp API
-- [ ] Live match tracking
-- [ ] Leaderboards
-- [ ] Player statistics
-- [ ] Multiple admins with roles
-- [ ] Tournament scheduling
-- [ ] Automated room ID sharing
-- [ ] Payment gateway integration
-- [ ] Multi-language support
+- Next.js team for the amazing framework
+- Tailwind CSS for the utility-first CSS
+- Framer Motion for smooth animations
+- MongoDB for the database solution
+- Cloudinary for image management
 
 ---
 
-**Made with ❤️ for the gaming community**
-
+**Built with ❤️ for the gaming community**

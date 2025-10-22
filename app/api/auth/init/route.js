@@ -1,57 +1,64 @@
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import connectDB from '@/lib/mongodb'
 import Admin from '@/models/Admin'
+import { hashPassword } from '@/lib/auth'
 
-// This route is for initial admin setup only
-// After first admin is created, this route should be disabled or protected
-export async function POST(request) {
+export async function POST() {
   try {
     await connectDB()
     
     // Check if admin already exists
-    const existingAdmin = await Admin.findOne({})
+    const existingAdmin = await Admin.findOne({ username: 'admin' })
     
     if (existingAdmin) {
-      return NextResponse.json(
-        { success: false, message: 'Admin already exists' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        success: true,
+        message: 'Admin already exists',
+        admin: {
+          username: existingAdmin.username,
+          email: existingAdmin.email,
+        }
+      })
     }
     
-    const { username, password } = await request.json()
+    // Create default admin
+    const hashedPassword = await hashPassword('admin123')
     
-    if (!username || !password) {
-      return NextResponse.json(
-        { success: false, message: 'Username and password are required' },
-        { status: 400 }
-      )
-    }
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
-    
-    // Create admin
     const admin = await Admin.create({
-      username,
+      username: 'admin',
+      email: 'admin@tournament.com',
       password: hashedPassword,
-      role: 'admin',
+      role: 'super_admin',
+      permissions: [
+        'view_registrations',
+        'approve_registrations',
+        'reject_registrations',
+        'delete_registrations',
+        'manage_tournaments',
+        'upload_qr_codes',
+        'reset_tournaments',
+        'view_analytics',
+        'manage_admins'
+      ]
     })
     
     return NextResponse.json({
       success: true,
-      message: 'Admin created successfully',
+      message: 'Default admin created successfully',
       admin: {
         username: admin.username,
-        role: admin.role,
+        email: admin.email,
       },
+      credentials: {
+        username: 'admin',
+        password: 'admin123'
+      }
     })
   } catch (error) {
-    console.error('Admin init error:', error)
+    console.error('Init admin error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: 'Failed to initialize admin' },
       { status: 500 }
     )
   }
 }
-

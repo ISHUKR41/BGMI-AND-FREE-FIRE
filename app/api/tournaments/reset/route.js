@@ -4,10 +4,8 @@ import Tournament from '@/models/Tournament'
 import Registration from '@/models/Registration'
 import { isAuthenticated } from '@/lib/auth'
 
-// Reset tournament (delete all registrations) - Admin only
 export async function POST(request) {
   try {
-    // Check authentication
     if (!isAuthenticated(request)) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
@@ -33,17 +31,24 @@ export async function POST(request) {
     })
     
     // Reset tournament counts
-    await Tournament.findOneAndUpdate(
-      { gameType, tournamentType },
-      {
-        registeredCount: 0,
-        approvedCount: 0,
-      }
-    )
+    const tournament = await Tournament.findOne({ gameType, tournamentType })
+    if (tournament) {
+      tournament.registeredCount = 0
+      tournament.approvedCount = 0
+      tournament.pendingCount = 0
+      tournament.rejectedCount = 0
+      tournament.availableSlots = tournament.maxSlots
+      tournament.isFull = false
+      tournament.roomId = null
+      tournament.roomPassword = null
+      tournament.status = 'scheduled'
+      await tournament.save()
+    }
     
     return NextResponse.json({
       success: true,
-      message: `Tournament reset successfully. ${deleteResult.deletedCount} registrations deleted.`,
+      message: `Tournament reset successfully. Deleted ${deleteResult.deletedCount} registrations.`,
+      tournament,
     })
   } catch (error) {
     console.error('Reset tournament error:', error)
@@ -53,4 +58,3 @@ export async function POST(request) {
     )
   }
 }
-

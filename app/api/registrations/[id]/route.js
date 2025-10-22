@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Registration from '@/models/Registration'
-import { isAuthenticated, getTokenFromRequest, verifyToken } from '@/lib/auth'
+import Tournament from '@/models/Tournament'
+import { isAuthenticated } from '@/lib/auth'
 
-// PATCH - Update registration status (approve/reject) - Admin only
+// PATCH - Update registration status (admin only)
 export async function PATCH(request, { params }) {
   try {
     // Check authentication
@@ -19,7 +20,7 @@ export async function PATCH(request, { params }) {
     const { id } = params
     const { status, rejectionReason } = await request.json()
     
-    if (!status || !['approved', 'rejected'].includes(status)) {
+    if (!status || !['approved', 'rejected', 'pending'].includes(status)) {
       return NextResponse.json(
         { success: false, message: 'Invalid status' },
         { status: 400 }
@@ -35,28 +36,36 @@ export async function PATCH(request, { params }) {
       )
     }
     
-    // Check if already processed
-    if (registration.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, message: `Registration already ${registration.status}` },
-        { status: 400 }
-      )
-    }
+    const oldStatus = registration.status
     
-    // Get admin info from token
-    const token = getTokenFromRequest(request)
-    const decoded = verifyToken(token)
-    
-    // Update registration
+    // Update registration status
     registration.status = status
-    registration.approvedAt = new Date()
-    registration.approvedBy = decoded.username
-    
-    if (status === 'rejected' && rejectionReason) {
+    if (rejectionReason) {
       registration.rejectionReason = rejectionReason
+    }
+    if (status === 'approved') {
+      registration.approvedAt = new Date()
     }
     
     await registration.save()
+    
+    // Update tournament counts
+    const tournament = await Tournament.findOne({
+      gameType: registration.gameType,
+      tournamentType: registration.tournamentType,
+    })
+    
+    if (tournament) {
+      // Recalculate approved count
+      const approvedCount = await Registration.countDocuments({
+        gameType: registration.gameType,
+        tournamentType: registration.tournamentType,
+        status: 'approved',
+      })
+      
+      tournament.approvedCount = approvedCount
+      await tournament.save()
+    }
     
     return NextResponse.json({
       success: true,
@@ -72,7 +81,7 @@ export async function PATCH(request, { params }) {
   }
 }
 
-// DELETE - Delete registration (Admin only)
+// DELETE - Delete registration (admin only)
 export async function DELETE(request, { params }) {
   try {
     // Check authentication
@@ -86,14 +95,37 @@ export async function DELETE(request, { params }) {
     await connectDB()
     
     const { id } = params
-    
-    const registration = await Registration.findByIdAndDelete(id)
+    const registration = await Registration.findById(id)
     
     if (!registration) {
       return NextResponse.json(
         { success: false, message: 'Registration not found' },
         { status: 404 }
       )
+    }
+    
+    const gameType = registration.gameType
+    const tournamentType = registration.tournamentType
+    
+    await Registration.findByIdAndDelete(id)
+    
+    // Update tournament counts
+    const tournament = await Tournament.findOne({ gameType, tournamentType })
+    if (tournament) {
+      const approvedCount = await Registration.countDocuments({
+        gameType,
+        tournamentType,
+        status: 'approved',
+      })
+      
+      const registeredCount = await Registration.countDocuments({
+        gameType,
+        tournamentType,
+      })
+      
+      tournament.approvedCount = approvedCount
+      tournament.registeredCount = registeredCount
+      await tournament.save()
     }
     
     return NextResponse.json({
@@ -104,6 +136,33 @@ export async function DELETE(request, { params }) {
     console.error('Delete registration error:', error)
     return NextResponse.json(
       { success: false, message: 'Failed to delete registration' },
+      { status: 500 }
+    )
+  }
+}
+// GET - Get single registration
+export async function GET(request, { params }) {
+  try {
+    await connectDB()
+    
+    const { id } = params
+    const registration = await Registration.findById(id)
+    
+    if (!registration) {
+      return NextResponse.json(
+        { success: false, message: 'Registration not found' },
+        { status: 404 }
+      )
+    }
+    
+    return NextResponse.json({
+      success: true,
+      registration,
+    })
+  } catch (error) {
+    console.error('Get registration error:', error)
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch registration' },
       { status: 500 }
     )
   }

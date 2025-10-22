@@ -1,67 +1,70 @@
-// Script to create initial admin user
-// Run with: node scripts/seed-admin.js
-
-require('dotenv').config({ path: '.env.local' })
-const bcrypt = require('bcryptjs')
 const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs')
 
-const MONGODB_URI = process.env.MONGODB_URI
-
-if (!MONGODB_URI) {
-  console.error('❌ MONGODB_URI not found in environment variables')
-  process.exit(1)
-}
-
+// Simple admin schema for seeding
 const AdminSchema = new mongoose.Schema({
   username: String,
+  email: String,
   password: String,
   role: String,
-  lastLogin: Date,
+  permissions: [String],
+  isActive: { type: Boolean, default: true },
 }, { timestamps: true })
 
 const Admin = mongoose.models.Admin || mongoose.model('Admin', AdminSchema)
 
 async function seedAdmin() {
   try {
-    console.log('🔄 Connecting to MongoDB...')
-    await mongoose.connect(MONGODB_URI)
-    console.log('✅ Connected to MongoDB')
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/tournament-db'
+    
+    await mongoose.connect(mongoUri)
+    console.log('Connected to MongoDB')
 
     // Check if admin already exists
-    const existingAdmin = await Admin.findOne({})
+    const existingAdmin = await Admin.findOne({ username: 'admin' })
     
     if (existingAdmin) {
-      console.log('⚠️  Admin already exists:', existingAdmin.username)
-      console.log('ℹ️  If you want to create a new admin, please delete the existing one first')
-      process.exit(0)
+      console.log('Admin already exists!')
+      return
     }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash('admin123', salt)
+
     // Create admin
-    const username = process.env.ADMIN_USERNAME || 'admin'
-    const password = process.env.ADMIN_PASSWORD || 'admin123'
-
-    const hashedPassword = await bcrypt.hash(password, 10)
-
     const admin = await Admin.create({
-      username,
+      username: 'admin',
+      email: 'admin@tournament.com',
       password: hashedPassword,
-      role: 'admin',
+      role: 'super_admin',
+      permissions: [
+        'view_registrations',
+        'approve_registrations',
+        'reject_registrations',
+        'delete_registrations',
+        'manage_tournaments',
+        'upload_qr_codes',
+        'reset_tournaments',
+        'view_analytics',
+        'manage_admins'
+      ]
     })
 
-    console.log('✅ Admin created successfully!')
-    console.log('📋 Credentials:')
-    console.log('   Username:', username)
-    console.log('   Password:', password)
-    console.log('')
-    console.log('⚠️  IMPORTANT: Change the password after first login!')
-    console.log('🔗 Login at: /admin/login')
+    console.log('Admin created successfully!')
+    console.log('Username: admin')
+    console.log('Password: admin123')
+    console.log('Email: admin@tournament.com')
 
-    process.exit(0)
   } catch (error) {
-    console.error('❌ Error:', error.message)
-    process.exit(1)
+    console.error('Error seeding admin:', error)
+  } finally {
+    await mongoose.disconnect()
   }
 }
 
-seedAdmin()
+if (require.main === module) {
+  seedAdmin()
+}
 
+module.exports = seedAdmin
